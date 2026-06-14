@@ -2,29 +2,28 @@ name: Maven Package
 
 on:
   release:
-    types: [ created ]
-
-permissions:
-  contents: read
-  packages: write
+    types: [created]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 and Maven settings
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: maven
           server-id: github
+          settings-path: ${{ github.workspace }}
 
-      - name: Publish package
-        run: mvn deploy
+      - name: Publish package to GitHub Packages
+        run: mvn deploy -s $GITHUB_WORKSPACE/settings.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

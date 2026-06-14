@@ -1,0 +1,33 @@
+name: Trigger Deployment Repository
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  trigger-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout package repository
+        uses: actions/checkout@v4
+
+      - name: Read version from setting.ini
+        id: version
+        shell: bash
+        run: |
+          major=$(grep '^major=' setting.ini | cut -d'=' -f2)
+          minor=$(grep '^minor=' setting.ini | cut -d'=' -f2)
+          patch=$(grep '^patch=' setting.ini | cut -d'=' -f2)
+          echo "version=${major}.${minor}.${patch}" >> "$GITHUB_OUTPUT"
+
+      - name: Run deployment script simulation
+        shell: bash
+        run: bash deploy/deploy.sh
+
+      - name: Trigger deploy repository workflow
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DEPLOY_REPO_TOKEN }}
+          repository: Haafzd/Basic-Java-Maven-SCD-deploy
+          event-type: package-released
+          client-payload: '{"package":"contohproject","version":"${{ steps.version.outputs.version }}","source":"${{ github.repository }}"}'
